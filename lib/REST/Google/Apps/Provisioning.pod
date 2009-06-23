@@ -1,0 +1,120 @@
+=head1 NAME
+
+REST::Google::Apps::Provisioning - A Perl library to Google's RESTful Apps API
+
+=head1 SYNOPSIS
+
+  use REST::Google::Apps::Provisioning
+
+  $google = REST::Google::Apps::Provisioning->new(
+      domain   => 'company.com',
+      username => 'admin',
+      password => 'g00gl34pp5!'
+  );
+
+  $user->{'jsmith'} = $google->getUser( 'jsmith' );
+
+=head1 DESCRIPTION
+
+REST::Google::Apps::Provisioning provides a Perl interface to Google's
+RESTful Apps API.
+
+This module is currently a work-in-progress.  Please e-mail with problems,
+bug fixes, comments and complaints.
+
+=head1 CONSTRUCTOR
+
+=over 4
+
+=item new ( DOMAIN, AUTH )
+
+Creates a new B<REST::Google::Apps::Provisioning> object.  A domain parameter
+is required.
+
+Supplying authentication information to the constructor is optional , but needs
+to happen either here or with a call to the B<authenticate> method.
+
+B<Example>
+
+  $google = REST::Google::Apps::Provisioning->new(
+      domain   => 'company.com',
+      username => 'admin',
+      password => 'g00gl34pp5!'
+  );
+
+=back
+
+=head1 METHODS
+
+=over 4
+
+=item authenticate ( AUTH )
+
+Authenticate a session.
+
+B<Example>
+
+  $google->authenticate(
+      username => 'admin',
+      password => 'g00gl34pp5!'
+  )
+  || die "Could not authenticate";
+
+=item createUser ( USER )
+
+B<Example>
+
+  $user->{'jsmith'} = $google->createUser(
+      username   => 'jsmith',
+      givenName  => 'Joseph',
+      familyName => 'Smith',
+      password   => 'j5m1thp455w0rd!'
+  )
+  || die "Could not create user";
+
+=item deleteUser ( USER )
+
+B<Example>
+
+  delete $user->{'jsmith'} if $google->deleteUser( 'jsmith' );
+
+=item updateUser ( USER )
+
+B<Example>
+
+  $google->updateUser(
+      username => 'jsmith',
+      givenName => 'Joey'
+  )
+  || die "Could not update user";
+
+=item getUser ( USER )
+
+B<Example>
+
+  $user->{'jsmith'} = $google->getUser( 'jsmith' );
+
+=item getAllUsers
+
+Retrieve a list of all users.  This can also be accomplished by calling the
+B<getUser> method with no arguments.
+
+=item getGroup ( GROUP )
+
+=item getAllGroups
+
+=item getNickname ( NICKNAME )
+
+=item getAllNicknames
+
+Retrieve a list of all nicknames.  This can also be accomplished by calling the
+B<getNickname> method with no arguments.
+
+=back
+
+=head1 AUTHOR
+
+Scott Schneider <sschneid@gmail.com>
+
+=cut
+
