@@ -7,7 +7,7 @@ use XML::Simple;
 use strict;
 use warnings;
 
-our $VERSION = '1.1.1';
+our $VERSION = '1.0.0';
 
 
 
@@ -230,6 +230,50 @@ sub getGroup {
 sub getAllGroups { return shift->getGroup(); }
 
 
+
+sub createNickname {
+    my $self = shift;
+
+    my ( $arg );
+    %{$arg} = @_;
+
+    my $url = qq(https://apps-apis.google.com/a/feeds/$self->{'domain'}/nickname/2.0);
+
+    my ( $body );
+
+    $body  = $self->_xmlpre();
+    $body .= qq(  <atom:category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/apps/2006#nickname" />\n);
+    $body .= qq(  <apps:login userName="$arg->{'username'}" />\n);
+    $body .= qq(  <apps:nickname name="$arg->{'nickname'}" />\n);
+    $body .= $self->_xmlpost();
+
+    my $result = $self->_request(
+        'method' => 'POST',
+        'url'    => $url,
+        'body'   => $body
+    ) || return( 0 );
+
+    my ( $ref );
+
+    $ref->{$arg->{'username'}} = {
+        %{$result->{'apps:nickname'}}
+    };
+
+    return( $ref );
+}
+
+sub deleteNickname {
+    my $self = shift;
+
+    my $nickname = shift
+    || croak qq(A nickname must be specified);
+
+    my $url = qq(https://apps-apis.google.com/a/feeds/$self->{'domain'}/nickname/2.0/$nickname);
+
+    my $result = $self->_request( 'method' => 'DELETE', 'url' => $url ) || return( 0 );
+
+    return( 1 ) if $result;
+}
 
 sub getNickname {
     my $self = shift;
