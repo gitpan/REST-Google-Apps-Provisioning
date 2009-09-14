@@ -7,7 +7,7 @@ use XML::Simple;
 use strict;
 use warnings;
 
-our $VERSION = '1.1.3';
+our $VERSION = '1.1.4';
 
 
 
@@ -17,8 +17,7 @@ sub new {
     my ( $arg );
     %{$arg} = @_;
 
-    $self->{'domain'} = $arg->{'domain'}
-    || croak qq(Missing required 'domain' argument);
+    $self->{'domain'} = $arg->{'domain'} || croak( "Missing required 'domain' argument" );
 
     $self->{'lwp'} = LWP::UserAgent->new();
     $self->{'lwp'}->agent( 'RESTGoogleAppsProvisioning/' . $VERSION );
@@ -46,9 +45,8 @@ sub authenticate {
     my ( $arg );
     %{$arg} = @_;
 
-    foreach ( qw/ username password / ) {
-        $arg->{$_}
-        || croak qq(Missing required $_ argument);
+    foreach my $param ( qw/ username password / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
     }
 
     my $response = $self->{'lwp'}->post(
@@ -79,6 +77,10 @@ sub createUser {
     my ( $arg );
     %{$arg} = @_;
 
+    foreach my $param ( qw/ username givenName familyName password / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
+
     my $url = qq(https://apps-apis.google.com/a/feeds/$self->{'domain'}/user/2.0);
 
     my ( $body );
@@ -87,6 +89,7 @@ sub createUser {
     $body .= qq(  <atom:category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/apps/2006#user" />\n);
     $body .= qq(  <apps:login userName="$arg->{'username'}" password="$arg->{'password'}" suspended="false" />\n);
     $body .= qq(  <apps:login hashFunctionName="$arg->{'passwordHashFunction'}" />\n) if $arg->{'passwordHashFunction'}; 
+    $body .= qq(  <apps:login admin="$arg->{'admin'} />\n) if $arg->{'admin'}; 
     $body .= qq(  <apps:quota limit="$arg->{'quotaLimitInMB'}" />\n) if $arg->{'quotaLimitInMB'}; 
     $body .= qq(  <apps:name familyName="$arg->{'familyName'}" givenName="$arg->{'givenName'}" />\n);
     $body .= $self->_xmlpost();
@@ -113,6 +116,10 @@ sub deleteUser {
 
     my ( $arg );
     %{$arg} = @_;
+
+    foreach my $param ( qw/ username / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
 
     my $url = qq(https://apps-apis.google.com/a/feeds/$self->{'domain'}/user/2.0/$arg->{'username'});
 
@@ -155,7 +162,34 @@ sub getUser {
     return( $ref );
 }
 
-sub getAllUsers { return shift->getUser(); }
+sub getAllUsers {
+    my $self = shift;
+
+    my ( @url, $result, $ref );
+
+    push @url, qq(https://apps-apis.google.com/a/feeds/$self->{'domain'}/user/2.0);
+
+    foreach my $u ( @url ) {
+        $result = $self->_request( 'method' => 'GET', 'url' => $u ) || return( 0 );
+
+        foreach my $link ( @{$result->{'link'}} ) {
+            if ( $link->{'rel'} eq 'next' ) {
+                push @url, $link->{'href'};
+            }
+        }
+
+        foreach ( keys %{$result->{'entry'}} ) {
+            my $username = $1 if /^.*\/(.+)$/;
+            $ref->{$username} = {
+                %{$result->{'entry'}->{$_}->{'apps:name'}},
+                %{$result->{'entry'}->{$_}->{'apps:login'}},
+                %{$result->{'entry'}->{$_}->{'apps:quota'}}
+            };
+        }
+    }
+
+    return( $ref );
+}
 
 sub updateUser {
     my $self = shift;
@@ -163,7 +197,11 @@ sub updateUser {
     my ( $arg );
     %{$arg} = @_;
 
-    my $user = $self->getUser( $arg->{'username'} );
+    foreach my $param ( qw/ username / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
+
+    my $user = $self->getUser( username => $arg->{'username'} );
 
     my $url = qq(https://apps-apis.google.com/a/feeds/$self->{'domain'}/user/2.0/$arg->{'username'});
 
@@ -180,10 +218,15 @@ sub updateUser {
 
     if ( $arg->{'password'} ) {
         $body .= qq(  <apps:login userName="$arg->{'username'}" password="$arg->{'password'}" />\n);
+        $body .= qq(  <apps:login hashFunctionName="$arg->{'passwordHashFunction'}" />\n) if $arg->{'passwordHashFunction'}; 
     }
 
     if ( $arg->{'suspended'} ) {
         $body .= qq(  <apps:login userName="$arg->{'username'}" suspended="$arg->{'suspended'}" />\n);
+    }
+
+    if ( $arg->{'admin'} ) {
+        $body .= qq(  <apps:login userName="$arg->{'username'}" admin="$arg->{'admin'}" />\n);
     }
 
     $body .= $self->_xmlpost();
@@ -241,6 +284,10 @@ sub createNickname {
     my ( $arg );
     %{$arg} = @_;
 
+    foreach my $param ( qw/ username nickname / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
+
     my $url = qq(https://apps-apis.google.com/a/feeds/$self->{'domain'}/nickname/2.0);
 
     my ( $body );
@@ -271,6 +318,10 @@ sub deleteNickname {
 
     my ( $arg );
     %{$arg} = @_;
+
+    foreach my $param ( qw/ nickname / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
 
     my $url = qq(https://apps-apis.google.com/a/feeds/$self->{'domain'}/nickname/2.0/$arg->{'nickname'});
 

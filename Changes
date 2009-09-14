@@ -1,5 +1,15 @@
 Revision history for REST-Google-Apps-Provisioning
 
+1.1.4
+* Mon Sep 14 2009 Scott Schneider <sschneid@gmail.com>
+- Functions will croak is necessary arguments are not specified
+- createUser and updateUser functions allow setting of admin privileges
+- Added hashFunctionName option to updateUser function
+- Bug fixes:
+  - updateUser was calling getUser without a username argument
+  - getAllUsers function returns all users, not just first 100
+- Fixed invalid example in POD
+
 1.1.3
 * Fri Sep 04 2009 Scott Schneider <sschneid@gmail.com>
 - Standardizing on OO-style input (all values must be named)
