@@ -7,7 +7,7 @@ use XML::Simple;
 use strict;
 use warnings;
 
-our $VERSION = '1.1.4';
+our $VERSION = '1.1.5';
 
 
 
@@ -134,30 +134,21 @@ sub getUser {
     my ( $arg );
     %{$arg} = @_;
 
-    my $url = qq(https://apps-apis.google.com/a/feeds/$self->{'domain'}/user/2.0);
-    $url .= "/$arg->{'username'}" if $arg->{'username'};
+    foreach my $param ( qw/ username / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
+
+    my $url = qq(https://apps-apis.google.com/a/feeds/$self->{'domain'}/user/2.0/$arg->{'username'});
 
     my $result = $self->_request( 'method' => 'GET', 'url' => $url ) || return( 0 );
 
     my ( $ref );
 
-    unless ( $arg->{'username'} ) {
-        foreach ( keys %{$result->{'entry'}} ) {
-            $arg->{'username'} = $1 if /^.*\/(.+)$/;
-            $ref->{$arg->{'username'}} = {
-                %{$result->{'entry'}->{$_}->{'apps:name'}},
-                %{$result->{'entry'}->{$_}->{'apps:login'}},
-                %{$result->{'entry'}->{$_}->{'apps:quota'}}
-            }
-        }
-    }
-    else {
-        $ref->{$arg->{'username'}} = {
-            %{$result->{'apps:name'}},
-            %{$result->{'apps:login'}},
-            %{$result->{'apps:quota'}}
-        };
-    }
+    $ref->{$arg->{'username'}} = {
+        %{$result->{'apps:name'}},
+        %{$result->{'apps:login'}},
+        %{$result->{'apps:quota'}}
+    };
 
     return( $ref );
 }
@@ -189,6 +180,34 @@ sub getAllUsers {
     }
 
     return( $ref );
+}
+
+sub renameUser {
+    my $self = shift;
+
+    my ( $arg );
+    %{$arg} = @_;
+
+    foreach my $param ( qw/ username newname / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
+
+    my $url = qq(https://apps-apis.google.com/a/feeds/$self->{'domain'}/user/2.0/$arg->{'username'});
+
+    my ( $body );
+
+    $body  = $self->_xmlpre();
+    $body .= qq(  <atom:category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/apps/2006#user" />\n);
+    $body .= qq(  <apps:login userName="$arg->{'newname'}" />\n);
+    $body .= $self->_xmlpost();
+
+    my $result = $self->_request(
+        'method' => 'PUT',
+        'url'    => $url,
+        'body'   => $body
+    ) || return( 0 );
+
+    return( 1 );
 }
 
 sub updateUser {
@@ -242,39 +261,226 @@ sub updateUser {
 
 
 
+sub createGroup {
+    my $self  = shift;
+
+    my ( $arg );
+    %{$arg} = @_;
+
+    foreach my $param ( qw/ group / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
+
+    my $url = qq(https://apps-apis.google.com/a/feeds/group/2.0/$self->{'domain'});
+
+    my ( $body );
+
+    $body  = $self->_xmlpre();
+    $body .= qq(  <atom:category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/apps/2006#group" />\n);
+    $body .= qq(  <apps:property name="groupId" value="$arg->{'group'}\@$self->{'domain'}" />\n);
+    $body .= qq(  <apps:property name="groupName" value="$arg->{'group'}" />\n);
+    $body .= $self->_xmlpost();
+
+    my $result = $self->_request(
+        'method' => 'POST',
+        'url'    => $url,
+        'body'   => $body
+    ) || return( 0 );
+
+    my ( $ref );
+
+    foreach ( keys %{$result->{'apps:property'}} ) {
+        $ref->{$arg->{'group'}}->{$_} = $result->{'apps:property'}->{$_}->{'value'};
+    }
+
+    $ref->{$arg->{'group'}}->{'updated'} = $result->{'updated'};
+
+    return( $ref );
+}
+
+sub deleteGroup {
+    my $self = shift;
+
+    my ( $arg );
+    %{$arg} = @_;
+
+    foreach my $param ( qw/ group / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
+
+    my $url = qq(https://apps-apis.google.com/a/feeds/group/2.0/$self->{'domain'}/$arg->{'group'});
+
+    my $result = $self->_request( 'method' => 'DELETE', 'url' => $url ) || return( 0 );
+
+    return( 1 ) if $result;
+}
+
 sub getGroup {
     my $self  = shift;
 
     my ( $arg );
     %{$arg} = @_;
 
-    my $url = qq(https://apps-apis.google.com/a/feeds/$self->{'domain'}/group/2.0);
-    $url .= "/$arg->{'group'}" if $arg->{'group'};
+    foreach my $param ( qw/ group / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
+
+    my $url = qq(https://apps-apis.google.com/a/feeds/group/2.0/$self->{'domain'}/$arg->{'group'});
 
     my $result = $self->_request( 'method' => 'GET', 'url' => $url ) || return( 0 );
 
     my ( $ref );
 
-    unless ( $arg->{'group'} ) {
-        foreach ( keys %{$result->{'entry'}} ) {
-            $arg->{'group'} = $1 if /^.*\/(.+)$/;
-            $ref->{$arg->{'group'}} = {
-                %{$result->{'entry'}->{$_}->{'apps:name'}},
-                %{$result->{'entry'}->{$_}->{'apps:login'}}
+    foreach ( keys %{$result->{'apps:property'}} ) {
+        $ref->{$arg->{'group'}}->{$_} = $result->{'apps:property'}->{$_}->{'value'};
+    }
+
+    $ref->{$arg->{'group'}}->{'updated'} = $result->{'updated'};
+
+    return( $ref );
+}
+
+sub getAllGroups {
+    my $self  = shift;
+
+    my ( @url, $result, $ref );
+
+    push @url, qq(https://apps-apis.google.com/a/feeds/group/2.0/$self->{'domain'});
+
+    foreach my $u ( @url ) {
+        $result = $self->_request( 'method' => 'GET', 'url' => $u ) || return( 0 );
+
+        foreach my $link ( @{$result->{'link'}} ) {
+            if ( $link->{'rel'} eq 'next' ) {
+                push @url, $link->{'href'};
             }
         }
-    }
-    else {
-        $ref->{$arg->{'group'}} = {
-            %{$result->{'apps:name'}},
-            %{$result->{'apps:login'}}
-        };
+
+        foreach my $e ( keys %{$result->{'entry'}} ) {
+            my $group = $result->{'entry'}->{$e}->{'apps:property'}->{'groupName'}->{'value'};
+
+            foreach ( keys %{$result->{'entry'}->{$e}->{'apps:property'}} ) {
+                $ref->{$group}->{$_} = $result->{'entry'}->{$e}->{'apps:property'}->{$_}->{'value'};
+            }
+
+            $ref->{$group}->{'updated'} = $result->{'entry'}->{$e}->{'updated'};
+        }
     }
 
     return( $ref );
 }
 
-sub getAllGroups { return shift->getGroup(); }
+sub addGroupMember {
+    my $self = shift;
+
+    my ( $arg );
+    %{$arg} = @_;
+
+    foreach my $param ( qw/ group member / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
+
+    my $url = qq(https://apps-apis.google.com/a/feeds/group/2.0/$self->{'domain'}/$arg->{'group'}/member);
+
+    my ( $body );
+
+    $body  = $self->_xmlpre();
+    $body .= qq(  <atom:category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/apps/2006#group" />\n);
+    $body .= qq(  <apps:property name="groupId" value="$arg->{'group'}\@$self->{'domain'}" />\n);
+    $body .= qq(  <apps:property name="memberId" value="$arg->{'member'}\@$self->{'domain'}" />\n);
+    $body .= $self->_xmlpost();
+
+    my $result = $self->_request(
+        'method' => 'POST',
+        'url'    => $url,
+        'body'   => $body
+    ) || return( 0 );
+
+    return( 1 );
+}
+
+sub deleteGroupMember {
+    my $self = shift;
+
+    my ( $arg );
+    %{$arg} = @_;
+
+    foreach my $param ( qw/ group member / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
+
+    my $url = qq(https://apps-apis.google.com/a/feeds/group/2.0/$self->{'domain'}/$arg->{'group'}/member/$arg->{'member'});
+
+    my $result = $self->_request( 'method' => 'DELETE', 'url' => $url ) || return( 0 );
+
+    return( 1 ) if $result;
+}
+
+sub getGroupMember {
+    # Not yet implemented
+}
+
+sub getGroupMembers {
+    my $self = shift;
+
+    my ( $arg );
+    %{$arg} = @_;
+
+    foreach my $param ( qw/ group / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
+
+    my ( @url, $result, $ref );
+
+    push @url, qq(https://apps-apis.google.com/a/feeds/group/2.0/$self->{'domain'}/$arg->{'group'}/member);
+
+    foreach my $u ( @url ) {
+        $result = $self->_request( 'method' => 'GET', 'url' => $u ) || return( 0 );
+
+        foreach my $link ( @{$result->{'link'}} ) {
+            if ( $link->{'rel'} eq 'next' ) {
+                push @url, $link->{'href'};
+            }
+        }
+
+        if ( $result->{'entry'}->{'apps:property'} ) {
+            my $member = $result->{'entry'}->{'apps:property'}->{'memberId'}->{'value'};
+            $member =~ s/^(.*)\@.*$/$1/g;
+
+            foreach ( keys %{$result->{'entry'}->{'apps:property'}} ) {
+                $ref->{$member}->{$_} = $result->{'entry'}->{'apps:property'}->{$_}->{'value'};
+            }
+        }
+        else {
+            foreach my $e ( keys %{$result->{'entry'}} ) {
+                my $member = $result->{'entry'}->{$e}->{'apps:property'}->{'memberId'}->{'value'};
+                $member =~ s/^(.*)\@.*$/$1/g;
+
+                foreach ( keys %{$result->{'entry'}->{$e}->{'apps:property'}} ) {
+                    $ref->{$member}->{$_} = $result->{'entry'}->{$e}->{'apps:property'}->{$_}->{'value'};
+                }
+            }
+        }
+    }
+
+    return( $ref );
+}
+
+sub addGroupOwner {
+    # Not yet implemented
+}
+
+sub deleteGroupOwner {
+    # Not yet implemented
+}
+
+sub getGroupOwner {
+    # Not yet implemented
+}
+
+sub getGroupOwners {
+    # Not yet implemented
+}
 
 
 
@@ -336,8 +542,11 @@ sub getNickname {
     my ( $arg );
     %{$arg} = @_;
 
-    my $url = qq(https://apps-apis.google.com/a/feeds/$self->{'domain'}/nickname/2.0);
-    $url .= "/$arg->{'nickname'}" if $arg->{'nickname'};
+    foreach my $param ( qw/ nickname / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
+
+    my $url = qq(https://apps-apis.google.com/a/feeds/$self->{'domain'}/nickname/2.0/$arg->{'nickname'});
 
     my $result = $self->_request( 'method' => 'GET', 'url' => $url ) || return( 0 );
 

@@ -1,8 +1,13 @@
 Revision history for REST-Google-Apps-Provisioning
 
+1.1.5
+* Thu Sep 17 2009 Scott Schneider <sschneid@gmail.com>
+- New functions: renameUser, createGroup, deleteGroup, getGroup,
+  getAllGroups, addGroupMember, deleteGroupMember, getGroupMembers
+
 1.1.4
 * Mon Sep 14 2009 Scott Schneider <sschneid@gmail.com>
-- Functions will croak is necessary arguments are not specified
+- Functions will croak if necessary arguments are not specified
 - createUser and updateUser functions allow setting of admin privileges
 - Added hashFunctionName option to updateUser function
 - Bug fixes:
