@@ -1,5 +1,11 @@
 Revision history for REST-Google-Apps-Provisioning
 
+1.1.6
+* Mon Oct 05 2009 Scott Schneider <sschneid@gmail.com>
+- New functions: addGroupOwner, deleteGroupOwner, getGroupOwners
+- Fixed passwordHashFunction support on createUser and updateUser
+- Parameter names are now case-insensitive
+
 1.1.5
 * Thu Sep 17 2009 Scott Schneider <sschneid@gmail.com>
 - New functions: renameUser, createGroup, deleteGroup, getGroup,

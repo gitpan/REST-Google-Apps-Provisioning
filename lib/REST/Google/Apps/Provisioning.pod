@@ -278,6 +278,57 @@ Using the above example, the returned hash is:
       }
   }
 
+=item addGroupOwner ( GROUP, OWNER )
+
+Add an owner to a group.
+
+B<Example>
+
+  $google->addGroupOwner(
+      group => 'finance',
+      owner => 'jsmith'
+  )
+  || die "Could not add group owner";
+
+=item deleteGroupOwner ( GROUP, OWNER )
+
+Remove an owner from a group.
+
+B<Example>
+
+  $google->deleteGroupOwner(
+      group => 'finance',
+      owner => 'jsmith'
+  )
+  || die "Could not delete group owner";
+
+=item getGroupOwner ( GROUP, OWNER )
+
+Not yet implemented.
+
+=item getGroupOwners ( GROUP )
+
+Retrieve a list of group owners.
+
+B<Example>
+
+  $group->{'finance'}->{'owners'} = $google->getGroupOwners( group => 'finance' );
+
+B<Hash>
+
+Using the above example, the returned hash is:
+
+  'owners' => {
+      'jsmith' => {
+          'email' => 'jsmith@company.com',
+          'type' => 'User'
+      },
+      'sschneid' => {
+          'email' => 'sschneid@company.com',
+          'type' => 'User'
+      }
+  }
+
 =item createNickname ( USERNAME, NICKNAME )
 
 Create a nickname (e-mail alias).

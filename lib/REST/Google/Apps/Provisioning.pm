@@ -7,7 +7,7 @@ use XML::Simple;
 use strict;
 use warnings;
 
-our $VERSION = '1.1.5';
+our $VERSION = '1.1.6';
 
 
 
@@ -16,6 +16,8 @@ sub new {
 
     my ( $arg );
     %{$arg} = @_;
+
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
 
     $self->{'domain'} = $arg->{'domain'} || croak( "Missing required 'domain' argument" );
 
@@ -44,6 +46,8 @@ sub authenticate {
 
     my ( $arg );
     %{$arg} = @_;
+
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
 
     foreach my $param ( qw/ username password / ) {
         $arg->{$param} || croak( "Missing required '$param' argument" );
@@ -77,7 +81,9 @@ sub createUser {
     my ( $arg );
     %{$arg} = @_;
 
-    foreach my $param ( qw/ username givenName familyName password / ) {
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
+
+    foreach my $param ( qw/ username givenname familyname password / ) {
         $arg->{$param} || croak( "Missing required '$param' argument" );
     }
 
@@ -87,11 +93,22 @@ sub createUser {
 
     $body  = $self->_xmlpre();
     $body .= qq(  <atom:category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/apps/2006#user" />\n);
-    $body .= qq(  <apps:login userName="$arg->{'username'}" password="$arg->{'password'}" suspended="false" />\n);
-    $body .= qq(  <apps:login hashFunctionName="$arg->{'passwordHashFunction'}" />\n) if $arg->{'passwordHashFunction'}; 
+    $body .= qq(  <apps:login userName="$arg->{'username'}" password="$arg->{'password'}" suspended="false");
+    if ( $arg->{'passwordhashfunction'}) { 
+        $arg->{'passwordhashfunction'} = uc( $arg->{'passwordhashfunction'} );
+
+        unless ( $arg->{'passwordhashfunction'} eq ( 'SHA-1' || 'MD5' ) ) {
+            croak( "Valid passwordHashFunction values are 'MD5' or 'SHA-1'" );
+        }
+
+        $body .= qq( hashFunctionName="$arg->{'passwordhashfunction'}" />\n); 
+    }
+    else {
+        $body .= qq( />\n);
+    }
     $body .= qq(  <apps:login admin="$arg->{'admin'} />\n) if $arg->{'admin'}; 
-    $body .= qq(  <apps:quota limit="$arg->{'quotaLimitInMB'}" />\n) if $arg->{'quotaLimitInMB'}; 
-    $body .= qq(  <apps:name familyName="$arg->{'familyName'}" givenName="$arg->{'givenName'}" />\n);
+    $body .= qq(  <apps:quota limit="$arg->{'quotalimitinmb'}" />\n) if $arg->{'quotalimitinmb'}; 
+    $body .= qq(  <apps:name familyName="$arg->{'familyname'}" givenName="$arg->{'givenname'}" />\n);
     $body .= $self->_xmlpost();
 
     my $result = $self->_request(
@@ -117,6 +134,8 @@ sub deleteUser {
     my ( $arg );
     %{$arg} = @_;
 
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
+
     foreach my $param ( qw/ username / ) {
         $arg->{$param} || croak( "Missing required '$param' argument" );
     }
@@ -133,6 +152,8 @@ sub getUser {
 
     my ( $arg );
     %{$arg} = @_;
+
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
 
     foreach my $param ( qw/ username / ) {
         $arg->{$param} || croak( "Missing required '$param' argument" );
@@ -188,6 +209,8 @@ sub renameUser {
     my ( $arg );
     %{$arg} = @_;
 
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
+
     foreach my $param ( qw/ username newname / ) {
         $arg->{$param} || croak( "Missing required '$param' argument" );
     }
@@ -216,6 +239,8 @@ sub updateUser {
     my ( $arg );
     %{$arg} = @_;
 
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
+
     foreach my $param ( qw/ username / ) {
         $arg->{$param} || croak( "Missing required '$param' argument" );
     }
@@ -229,15 +254,26 @@ sub updateUser {
     $body  = $self->_xmlpre();
     $body .= qq(  <atom:category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/apps/2006#user" />\n);
 
-    if ( $arg->{'givenName'} || $arg->{'familyName'} ) {
-        $arg->{'givenName'}  ||= $user->{$arg->{'username'}}->{'givenName'};
-        $arg->{'familyName'} ||= $user->{$arg->{'username'}}->{'familyName'};
-        $body .= qq(  <apps:name familyName="$arg->{'familyName'}" givenName="$arg->{'givenName'}" />\n);
+    if ( $arg->{'givenname'} || $arg->{'familyname'} ) {
+        $arg->{'givenname'}  ||= $user->{$arg->{'username'}}->{'givenName'};
+        $arg->{'familyname'} ||= $user->{$arg->{'username'}}->{'familyName'};
+        $body .= qq(  <apps:name familyName="$arg->{'familyname'}" givenName="$arg->{'givenname'}" />\n);
     }
 
     if ( $arg->{'password'} ) {
-        $body .= qq(  <apps:login userName="$arg->{'username'}" password="$arg->{'password'}" />\n);
-        $body .= qq(  <apps:login hashFunctionName="$arg->{'passwordHashFunction'}" />\n) if $arg->{'passwordHashFunction'}; 
+        $body .= qq(  <apps:login userName="$arg->{'username'}" password="$arg->{'password'}");
+        if ( $arg->{'passwordhashfunction'} ) {
+            $arg->{'passwordhashfunction'} = uc( $arg->{'passwordhashfunction'} );
+        
+            unless ( $arg->{'passwordhashfunction'} eq ( 'SHA-1' || 'MD5' ) ) { 
+                croak( "Valid passwordHashFunction values are 'MD5' or 'SHA-1'" );
+            }
+
+            $body .= qq( hashFunctionName="$arg->{'passwordhashfunction'}" />\n); 
+        }
+        else {
+            $body .= qq( />\n);
+        }
     }
 
     if ( $arg->{'suspended'} ) {
@@ -266,6 +302,8 @@ sub createGroup {
 
     my ( $arg );
     %{$arg} = @_;
+
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
 
     foreach my $param ( qw/ group / ) {
         $arg->{$param} || croak( "Missing required '$param' argument" );
@@ -304,6 +342,8 @@ sub deleteGroup {
     my ( $arg );
     %{$arg} = @_;
 
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
+
     foreach my $param ( qw/ group / ) {
         $arg->{$param} || croak( "Missing required '$param' argument" );
     }
@@ -320,6 +360,8 @@ sub getGroup {
 
     my ( $arg );
     %{$arg} = @_;
+
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
 
     foreach my $param ( qw/ group / ) {
         $arg->{$param} || croak( "Missing required '$param' argument" );
@@ -376,8 +418,17 @@ sub addGroupMember {
     my ( $arg );
     %{$arg} = @_;
 
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
+
     foreach my $param ( qw/ group member / ) {
         $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
+
+    if ( $arg->{'owner'} && lc( $arg->{'owner'} ) eq 'true' ) {
+        return $self->addGroupOwner(
+            group => $arg->{'group'},
+            owner => $arg->{'member'}
+        );
     }
 
     my $url = qq(https://apps-apis.google.com/a/feeds/group/2.0/$self->{'domain'}/$arg->{'group'}/member);
@@ -405,6 +456,8 @@ sub deleteGroupMember {
     my ( $arg );
     %{$arg} = @_;
 
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
+
     foreach my $param ( qw/ group member / ) {
         $arg->{$param} || croak( "Missing required '$param' argument" );
     }
@@ -425,6 +478,8 @@ sub getGroupMembers {
 
     my ( $arg );
     %{$arg} = @_;
+
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
 
     foreach my $param ( qw/ group / ) {
         $arg->{$param} || croak( "Missing required '$param' argument" );
@@ -467,11 +522,53 @@ sub getGroupMembers {
 }
 
 sub addGroupOwner {
-    # Not yet implemented
+    my $self = shift;
+
+    my ( $arg );
+    %{$arg} = @_;
+
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
+
+    foreach my $param ( qw/ group owner / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
+
+    my $url = qq(https://apps-apis.google.com/a/feeds/group/2.0/$self->{'domain'}/$arg->{'group'}/owner);
+
+    my ( $body );
+
+    $body  = $self->_xmlpre();
+    $body .= qq(  <atom:category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/apps/2006#group" />\n);
+    $body .= qq(  <apps:property name="groupId" value="$arg->{'group'}\@$self->{'domain'}" />\n);
+    $body .= qq(  <apps:property name="email" value="$arg->{'owner'}\@$self->{'domain'}" />\n);
+    $body .= $self->_xmlpost();
+
+    my $result = $self->_request(
+        'method' => 'POST',
+        'url'    => $url,
+        'body'   => $body
+    ) || return( 0 );
+
+    return( 1 );
 }
 
 sub deleteGroupOwner {
-    # Not yet implemented
+    my $self = shift;
+
+    my ( $arg );
+    %{$arg} = @_;
+
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
+
+    foreach my $param ( qw/ group owner / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
+
+    my $url = qq(https://apps-apis.google.com/a/feeds/group/2.0/$self->{'domain'}/$arg->{'group'}/owner/$arg->{'owner'});
+
+    my $result = $self->_request( 'method' => 'DELETE', 'url' => $url ) || return( 0 );
+
+    return( 1 ) if $result;
 }
 
 sub getGroupOwner {
@@ -479,7 +576,51 @@ sub getGroupOwner {
 }
 
 sub getGroupOwners {
-    # Not yet implemented
+    my $self = shift;
+
+    my ( $arg );
+    %{$arg} = @_;
+
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
+
+    foreach my $param ( qw/ group / ) {
+        $arg->{$param} || croak( "Missing required '$param' argument" );
+    }
+
+    my ( @url, $result, $ref );
+
+    push @url, qq(https://apps-apis.google.com/a/feeds/group/2.0/$self->{'domain'}/$arg->{'group'}/owner);
+
+    foreach my $u ( @url ) {
+        $result = $self->_request( 'method' => 'GET', 'url' => $u ) || return( 0 );
+
+        foreach my $link ( @{$result->{'link'}} ) {
+            if ( $link->{'rel'} eq 'next' ) {
+                push @url, $link->{'href'};
+            }
+        }
+
+        if ( $result->{'entry'}->{'apps:property'} ) {
+            my $owner = $result->{'entry'}->{'apps:property'}->{'email'}->{'value'};
+            $owner =~ s/^(.*)\@.*$/$1/g;
+
+            foreach ( keys %{$result->{'entry'}->{'apps:property'}} ) {
+                $ref->{$owner}->{$_} = $result->{'entry'}->{'apps:property'}->{$_}->{'value'};
+            }
+        }
+        else {
+            foreach my $e ( keys %{$result->{'entry'}} ) {
+                my $owner = $result->{'entry'}->{$e}->{'apps:property'}->{'email'}->{'value'};
+                $owner =~ s/^(.*)\@.*$/$1/g;
+
+                foreach ( keys %{$result->{'entry'}->{$e}->{'apps:property'}} ) {
+                    $ref->{$owner}->{$_} = $result->{'entry'}->{$e}->{'apps:property'}->{$_}->{'value'};
+                }
+            }
+        }
+    }
+
+    return( $ref );
 }
 
 
@@ -489,6 +630,8 @@ sub createNickname {
 
     my ( $arg );
     %{$arg} = @_;
+
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
 
     foreach my $param ( qw/ username nickname / ) {
         $arg->{$param} || croak( "Missing required '$param' argument" );
@@ -525,6 +668,8 @@ sub deleteNickname {
     my ( $arg );
     %{$arg} = @_;
 
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
+
     foreach my $param ( qw/ nickname / ) {
         $arg->{$param} || croak( "Missing required '$param' argument" );
     }
@@ -541,6 +686,8 @@ sub getNickname {
 
     my ( $arg );
     %{$arg} = @_;
+
+    map { $arg->{lc($_)} = $arg->{$_} } keys %{$arg};
 
     foreach my $param ( qw/ nickname / ) {
         $arg->{$param} || croak( "Missing required '$param' argument" );
