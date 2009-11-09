@@ -1,5 +1,12 @@
 Revision history for REST-Google-Apps-Provisioning
 
+1.1.7
+* Mon Nov 09 2009 Scott Schneider <sschneid@gmail.com
+- New function: getUserNicknames (per Zrajm C Akfohg)
+- Bug fixes:
+  - getAllNicknames was requiring nickname, but returning getNickName;
+    fixed (also per Zrajm C Akfohg <zrajm@klingonska.org>)
+
 1.1.6
 * Mon Oct 05 2009 Scott Schneider <sschneid@gmail.com>
 - New functions: addGroupOwner, deleteGroupOwner, getGroupOwners
