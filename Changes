@@ -1,5 +1,10 @@
 Revision history for REST-Google-Apps-Provisioning
 
+1.1.8
+* Mon Nov 09 2009 Scott Schneider <sschneid@gmail.com>
+- Fixing busted CPAN upload; this version includes the updates listed
+  below for 1.1.7
+
 1.1.7
 * Mon Nov 09 2009 Scott Schneider <sschneid@gmail.com
 - New function: getUserNicknames (per Zrajm C Akfohg)
