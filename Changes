@@ -1,5 +1,12 @@
 Revision history for REST-Google-Apps-Provisioning
 
+1.1.9
+* Fri Jan 07 2011 Scott Schneider <sschneid@gmail.com>
+- createGroup support for 'description' and 'permission' options
+- Bug fixes:
+  - passwordHashFunction parameter syntax fix
+  - getUserNicknames should not assume multiple nicknames
+
 1.1.8
 * Mon Nov 09 2009 Scott Schneider <sschneid@gmail.com>
 - Fixing busted CPAN upload; this version includes the updates listed
