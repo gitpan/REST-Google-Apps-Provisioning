@@ -7,7 +7,7 @@ use XML::Simple;
 use strict;
 use warnings;
 
-our $VERSION = '1.1.9';
+our $VERSION = '1.1.10';
 
 
 
@@ -422,14 +422,25 @@ sub getAllGroups {
             }
         }
 
-        foreach my $e ( keys %{$result->{'entry'}} ) {
-            my $group = $result->{'entry'}->{$e}->{'apps:property'}->{'groupName'}->{'value'};
+        if ( $result->{'entry'}->{'apps:property'} ) {
+             my $group = $result->{'entry'}->{'apps:property'}->{'groupName'}->{'value'};
 
-            foreach ( keys %{$result->{'entry'}->{$e}->{'apps:property'}} ) {
-                $ref->{$group}->{$_} = $result->{'entry'}->{$e}->{'apps:property'}->{$_}->{'value'};
+            foreach ( keys %{$result->{'entry'}->{'apps:property'}} ) {
+                $ref->{$group}->{$_} = $result->{'entry'}->{'apps:property'}->{$_}->{'value'};
             }
 
-            $ref->{$group}->{'updated'} = $result->{'entry'}->{$e}->{'updated'};
+            $ref->{$group}->{'updated'} = $result->{'entry'}->{'updated'};
+        }
+        else {
+            foreach my $e ( keys %{$result->{'entry'}} ) {
+                my $group = $result->{'entry'}->{$e}->{'apps:property'}->{'groupName'}->{'value'};
+
+                foreach ( keys %{$result->{'entry'}->{$e}->{'apps:property'}} ) {
+                    $ref->{$group}->{$_} = $result->{'entry'}->{$e}->{'apps:property'}->{$_}->{'value'};
+                }
+
+                $ref->{$group}->{'updated'} = $result->{'entry'}->{$e}->{'updated'};
+            }
         }
     }
 
@@ -448,6 +459,8 @@ sub addGroupMember {
         $arg->{$param} || croak( "Missing required '$param' argument" );
     }
 
+    $arg->{'member'} .= '@' . $self->{'domain'} unless ( $arg->{'member'} =~ /[@]/ );
+
     if ( $arg->{'owner'} && lc( $arg->{'owner'} ) eq 'true' ) {
         return $self->addGroupOwner(
             group => $arg->{'group'},
@@ -463,7 +476,7 @@ sub addGroupMember {
 
     $body .= qq(  <atom:category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/apps/2006#group" />\n);
     $body .= qq(  <apps:property name="groupId" value="$arg->{'group'}\@$self->{'domain'}" />\n);
-    $body .= qq(  <apps:property name="memberId" value="$arg->{'member'}\@$self->{'domain'}" />\n);
+    $body .= qq(  <apps:property name="memberId" value="$arg->{'member'}" />\n);
 
     $body .= $self->_xmlpost();
 
@@ -487,6 +500,8 @@ sub deleteGroupMember {
     foreach my $param ( qw/ group member / ) {
         $arg->{$param} || croak( "Missing required '$param' argument" );
     }
+
+    $arg->{'member'} .= '@' . $self->{'domain'} unless ( $arg->{'member'} =~ /[@]/ );
 
     my $url = qq(https://apps-apis.google.com/a/feeds/group/2.0/$self->{'domain'}/$arg->{'group'}/member/$arg->{'member'});
 
@@ -526,7 +541,7 @@ sub getGroupMembers {
 
         if ( $result->{'entry'}->{'apps:property'} ) {
             my $member = $result->{'entry'}->{'apps:property'}->{'memberId'}->{'value'};
-            $member =~ s/^(.*)\@.*$/$1/g;
+            $member =~ s/^(.*)\@\Q$self->{'domain'}\E$/$1/g;
 
             foreach ( keys %{$result->{'entry'}->{'apps:property'}} ) {
                 $ref->{$member}->{$_} = $result->{'entry'}->{'apps:property'}->{$_}->{'value'};

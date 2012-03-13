@@ -1,5 +1,11 @@
 Revision history for REST-Google-Apps-Provisioning
 
+1.1.10
+* Tue Mar 13 2012 Scott Schneider <sschneid@gmail.com>
+- Added support for external group members
+- Bug fixes:
+  - getAllGroups() was failing if only one group exists
+
 1.1.9
 * Fri Jan 07 2011 Scott Schneider <sschneid@gmail.com>
 - createGroup support for 'description' and 'permission' options

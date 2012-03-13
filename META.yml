@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                REST-Google-Apps-Provisioning
-version:             1.1.9
+version:             1.1.10
 abstract:            A Perl library to Google's RESTful Apps Provisioning API 
 license:             perl
 author:
